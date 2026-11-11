@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Logo } from '../components/Icon'
 import { supabase } from '../lib/supabase'
 
 export default function LoginPage() {
@@ -28,10 +29,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto mt-20 max-w-sm px-4">
-      <div className="mb-6 text-center">
-        <div className="text-4xl">🗓️</div>
-        <h1 className="mt-2 text-2xl font-bold">Schedular</h1>
+    <div className="bg-app min-h-screen px-4 pt-16 sm:pt-24">
+     <div className="mx-auto max-w-sm">
+      <div className="mb-6 flex flex-col items-center text-center">
+        <Logo className="h-14 w-14" />
+        <h1 className="mt-3 text-2xl font-extrabold tracking-tight">TaskEasy</h1>
         <p className="text-sm text-slate-500">Lập kế hoạch và theo dõi tiến độ công việc</p>
       </div>
       <form onSubmit={submit} className="card space-y-4 p-6">
@@ -79,6 +81,7 @@ export default function LoginPage() {
           {mode === 'signin' ? 'Chưa có tài khoản? Đăng ký' : 'Đã có tài khoản? Đăng nhập'}
         </button>
       </form>
+     </div>
     </div>
   )
 }

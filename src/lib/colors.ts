@@ -8,7 +8,7 @@ export interface ColorDef {
 
 // Class viết đầy đủ để Tailwind quét được.
 export const COLORS: ColorDef[] = [
-  { key: 'blue', label: 'Xanh dương', dot: 'bg-blue-500', soft: 'bg-blue-50', border: 'border-l-blue-500' },
+  { key: 'blue', label: 'Xanh dương', dot: 'bg-indigo-500', soft: 'bg-indigo-50', border: 'border-l-indigo-500' },
   { key: 'green', label: 'Xanh lá', dot: 'bg-emerald-500', soft: 'bg-emerald-50', border: 'border-l-emerald-500' },
   { key: 'amber', label: 'Vàng', dot: 'bg-amber-500', soft: 'bg-amber-50', border: 'border-l-amber-500' },
   { key: 'red', label: 'Đỏ', dot: 'bg-rose-500', soft: 'bg-rose-50', border: 'border-l-rose-500' },
@@ -22,15 +22,17 @@ export const colorOf = (key: string) => COLORS.find((c) => c.key === key) ?? COL
 export const PRIORITY_LABEL: Record<number, string> = { 1: 'Thấp', 2: 'Vừa', 3: 'Cao' }
 
 export const STATUS_LABEL = {
-  pending: 'Chưa làm',
-  in_progress: 'Đang làm',
+  pending: 'Chưa bắt đầu',
+  in_progress: 'Đang thực hiện',
   done: 'Hoàn thành',
   skipped: 'Bỏ qua',
 } as const
 
 export const STATUS_BADGE = {
   pending: 'bg-slate-100 text-slate-600',
-  in_progress: 'bg-amber-100 text-amber-800',
-  done: 'bg-emerald-100 text-emerald-800',
-  skipped: 'bg-slate-100 text-slate-400 line-through',
+  in_progress: 'bg-indigo-50 text-indigo-700',
+  done: 'bg-emerald-50 text-emerald-700',
+  skipped: 'bg-slate-100 text-slate-500',
 } as const
+
+export const OVERDUE_BADGE = 'bg-rose-50 text-rose-700'

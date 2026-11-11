@@ -4,6 +4,7 @@ import {
   endOfMonth,
   endOfWeek,
   format,
+  getISODay,
   parseISO,
   startOfMonth,
   startOfWeek,
@@ -33,7 +34,13 @@ export const monthDays = (d: Date) => daysBetween(startOfMonth(d), endOfMonth(d)
 export const fmt = (d: Date | string, pattern: string) =>
   format(typeof d === 'string' ? fromKey(d) : d, pattern, { locale: vi })
 
-export const hhmm = (t: string | null) => (t ? t.slice(0, 5) : '')
+/** "Thứ 2" … "Thứ 7", "CN" */
+export const weekdayLabel = (key: string) => {
+  const iso = getISODay(fromKey(key))
+  return iso === 7 ? 'CN' : `Thứ ${iso + 1}`
+}
+
+export const hhmm =(t: string | null) => (t ? t.slice(0, 5) : '')
 
 export function timeRange(start: string | null, end: string | null): string {
   if (!start) return 'Cả ngày'

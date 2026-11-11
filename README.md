@@ -41,15 +41,28 @@ npm run db:push         # áp dụng supabase/migrations/*.sql
 
 Thay đổi schema về sau: `npm run db:new -- ten_migration` → sửa file SQL mới → `npm run db:push`.
 
-### 3. Telegram
+### 3. Telegram (một bot chung cho mọi người dùng — chỉ admin làm một lần)
 
-1. Chat với **@BotFather** → `/newbot` → nhận bot token.
-2. Lưu token vào Supabase Vault (Dashboard → SQL Editor):
+1. Chat với **@BotFather** → `/newbot` → nhận bot token và username của bot.
+2. Lưu 2 secret vào Supabase Vault (Dashboard → SQL Editor):
    ```sql
    select vault.create_secret('<BOT_TOKEN>', 'telegram_bot_token');
+   select vault.create_secret('<CHUỖI_NGẪU_NHIÊN>', 'telegram_webhook_secret');
    ```
-3. Mở chat với bot và bấm **Start**.
-4. Lấy Chat ID (nhắn **@userinfobot**), vào trang **Cài đặt** của app → dán Chat ID → Lưu → **Gửi thử thông báo**.
+3. Deploy Edge Function nhận tin nhắn từ bot:
+   ```bash
+   supabase functions deploy telegram-webhook --use-api
+   ```
+4. Trỏ webhook của bot tới function (dùng đúng chuỗi ngẫu nhiên ở bước 2):
+   ```bash
+   curl "https://api.telegram.org/bot<BOT_TOKEN>/setWebhook" \
+     --data-urlencode "url=https://<your-project-ref>.supabase.co/functions/v1/telegram-webhook" \
+     --data-urlencode "secret_token=<CHUỖI_NGẪU_NHIÊN>"
+   ```
+5. Đặt `VITE_TELEGRAM_BOT_USERNAME=<username bot, không có @>` trong `.env.local` và trên Vercel.
+
+**Người dùng** chỉ cần vào **Cài đặt → Kết nối Telegram → Start**. App tạo mã dùng 1 lần (hạn 15 phút),
+bot nhận mã qua webhook và tự lưu Chat ID. Không ai phải tạo bot hay tìm Chat ID.
 
 ### 4. Chạy local
 

@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import { useAuth } from './context/AuthContext'
 import { DataProvider } from './context/DataContext'
 import { isSupabaseConfigured } from './lib/supabase'
+import DashboardPage from './pages/DashboardPage'
 import DayPage from './pages/DayPage'
 import LoginPage from './pages/LoginPage'
 import MonthPage from './pages/MonthPage'
@@ -41,6 +42,7 @@ export default function App() {
           <Route index element={<DayPage />} />
           <Route path="week" element={<WeekPage />} />
           <Route path="month" element={<MonthPage />} />
+          <Route path="dashboard" element={<DashboardPage />} />
           <Route path="stats" element={<StatsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

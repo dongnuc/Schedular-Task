@@ -87,7 +87,7 @@ export default function TaskFormModal({ task, defaultDate, onClose }: Props) {
   }
 
   return (
-    <Modal title={task ? 'Sửa công việc' : 'Thêm công việc'} onClose={onClose}>
+    <Modal title={task ? 'Sửa công việc' : 'Thêm công việc'} icon={task ? 'pencil' : 'plus'} onClose={onClose}>
       <form onSubmit={submit} className="space-y-4">
         <div>
           <label className="label" htmlFor="t-title">Tên công việc</label>
@@ -175,7 +175,7 @@ export default function TaskFormModal({ task, defaultDate, onClose }: Props) {
           )}
         </div>
 
-        <div className="rounded-lg bg-slate-50 p-3">
+        <div className="rounded-xl bg-slate-50 p-3">
           <label className="label" htmlFor="t-rec">Lặp lại</label>
           <select
             id="t-rec"

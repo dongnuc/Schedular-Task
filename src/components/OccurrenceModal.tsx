@@ -4,6 +4,7 @@ import { PRIORITY_LABEL, STATUS_LABEL, colorOf } from '../lib/colors'
 import { fmt, timeRange } from '../lib/dates'
 import { describeRecurrence } from '../lib/recurrence'
 import type { DayItem, OccurrenceStatus } from '../lib/types'
+import Icon from './Icon'
 import Modal from './Modal'
 
 interface Props {
@@ -61,17 +62,26 @@ export default function OccurrenceModal({ item, onClose, onEdit }: Props) {
   }
 
   return (
-    <Modal title="Chi tiết công việc" onClose={onClose}>
+    <Modal title="Chi tiết công việc" icon="clipboard" onClose={onClose}>
       <div className="space-y-5">
-        <div className={`rounded-lg border-l-4 ${color.border} ${color.soft} p-3`}>
+        <div className={`rounded-xl border-l-4 ${color.border} ${color.soft} p-3`}>
           <div className="font-semibold">{task.title}</div>
           <div className="mt-1 text-sm text-slate-600">
             {fmt(date, 'EEEE, dd/MM/yyyy')} · {timeRange(task.start_time, task.end_time)}
           </div>
           <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-slate-500">
             <span>Ưu tiên: {PRIORITY_LABEL[task.priority]}</span>
-            {recurrence && <span>🔁 {recurrence}</span>}
-            {task.start_time && <span>{task.notify ? '🔔 Có thông báo' : '🔕 Tắt thông báo'}</span>}
+            {recurrence && (
+              <span className="inline-flex items-center gap-1">
+                <Icon name="repeat" className="h-3.5 w-3.5" /> {recurrence}
+              </span>
+            )}
+            {task.start_time && (
+              <span className="inline-flex items-center gap-1">
+                <Icon name={task.notify ? 'bell-ring' : 'bell-off'} className="h-3.5 w-3.5" />
+                {task.notify ? 'Có thông báo' : 'Tắt thông báo'}
+              </span>
+            )}
           </div>
           {task.description && (
             <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{task.description}</p>
@@ -80,14 +90,14 @@ export default function OccurrenceModal({ item, onClose, onEdit }: Props) {
 
         <div>
           <span className="label">Trạng thái</span>
-          <div className="grid grid-cols-4 gap-1.5">
+          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
             {STATUSES.map((s) => (
               <button
                 key={s}
                 type="button"
                 aria-pressed={status === s}
                 onClick={() => pickStatus(s)}
-                className={`rounded-lg px-2 py-2 text-xs font-medium ${
+                className={`min-h-10 rounded-xl px-1 py-2 text-xs font-semibold ${
                   status === s
                     ? 'bg-indigo-600 text-white'
                     : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'

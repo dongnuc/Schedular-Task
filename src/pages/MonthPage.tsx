@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { addMonths } from 'date-fns'
-import { PageHeader, ProgressBar } from '../components/Widgets'
+import { AddButton, DateNav, PageHeader, ProgressBar } from '../components/Widgets'
 import { useData } from '../context/DataContext'
 import { useUI } from '../context/UIContext'
 import { colorOf } from '../lib/colors'
@@ -10,7 +10,7 @@ import { summarize } from '../lib/stats'
 import { useDateParam } from '../lib/useDateParam'
 
 const HEAD = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
-const MAX_VISIBLE = 3
+const MAX_VISIBLE = 2
 
 export default function MonthPage() {
   const [date, setDate] = useDateParam()
@@ -32,47 +32,52 @@ export default function MonthPage() {
   return (
     <div>
       <PageHeader
+        icon="calendar-days"
         title={fmt(current, "'Tháng' MM/yyyy")}
-        subtitle={`Hoàn thành ${summary.done}/${summary.total - summary.skipped} việc · ${summary.completionRate}%`}
-        onPrev={() => setDate(toKey(addMonths(current, -1)))}
-        onNext={() => setDate(toKey(addMonths(current, 1)))}
-        onToday={() => setDate(today)}
-        actions={
-          <button className="btn-primary" onClick={() => openTaskForm({ date })}>
-            + Thêm việc
-          </button>
-        }
-      />
-      <ProgressBar value={summary.completionRate} className="mb-4" />
+        subtitle={`Hoàn thành: ${summary.done}/${summary.total - summary.skipped} việc - ${summary.completionRate}%`}
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <DateNav
+            onPrev={() => setDate(toKey(addMonths(current, -1)))}
+            onNext={() => setDate(toKey(addMonths(current, 1)))}
+            onToday={() => setDate(today)}
+          />
+          <AddButton onClick={() => openTaskForm({ date })} />
+        </div>
+      </PageHeader>
+
+      <ProgressBar value={summary.completionRate} className="mb-5" />
 
       <div className="card overflow-hidden">
-        <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center text-xs font-semibold text-slate-500">
-          {HEAD.map((h) => <div key={h} className="py-2">{h}</div>)}
+        <div className="grid grid-cols-7 border-b border-slate-100 text-center text-xs font-semibold text-slate-500">
+          {HEAD.map((h) => <div key={h} className="py-3">{h}</div>)}
         </div>
         <div className="grid grid-cols-7">
           {grid.map((d) => {
             const items = itemsForDate(d)
             const s = summarize(items)
             const outside = !d.startsWith(monthPrefix)
+            const isToday = d === today
             return (
               <button
                 key={d}
-                onClick={() => navigate(d === today ? '/' : `/?d=${d}`)}
-                className={`flex min-h-20 flex-col border-b border-r border-slate-100 p-1 text-left align-top hover:bg-indigo-50/50 sm:min-h-28 sm:p-1.5 ${
-                  outside ? 'bg-slate-50/60 text-slate-400' : ''
+                onClick={() => navigate(isToday ? '/' : `/?d=${d}`)}
+                aria-label={`${fmt(d, 'dd/MM/yyyy')}${items.length ? `, ${items.length} việc` : ''}`}
+                className={`flex min-h-[4.5rem] flex-col items-start border-b border-r border-slate-50 p-1.5 text-left transition-colors hover:bg-indigo-50/60 sm:min-h-28 sm:p-2 ${
+                  outside ? 'text-slate-300' : ''
                 }`}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex w-full items-center justify-between">
                   <span
-                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
-                      d === today ? 'bg-indigo-600 text-white' : ''
+                    className={`grid h-7 w-7 place-items-center rounded-full text-sm font-semibold ${
+                      isToday ? 'bg-indigo-600 text-white' : ''
                     }`}
                   >
                     {Number(d.slice(8))}
                   </span>
-                  {items.length > 0 && (
+                  {items.length > 0 && !outside && (
                     <span
-                      className={`text-[10px] tabular-nums ${
+                      className={`hidden text-[11px] tabular-nums sm:inline ${
                         s.completionRate === 100 ? 'font-semibold text-emerald-600' : 'text-slate-500'
                       }`}
                     >
@@ -80,13 +85,14 @@ export default function MonthPage() {
                     </span>
                   )}
                 </div>
-                <div className="mt-1 hidden space-y-0.5 sm:block">
+
+                <div className="mt-1 hidden w-full space-y-0.5 lg:block">
                   {items.slice(0, MAX_VISIBLE).map((i) => (
-                    <div key={i.task.id} className="flex items-center gap-1 text-[11px]">
+                    <div key={i.task.id} className="flex items-center gap-1.5 text-xs">
                       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${colorOf(i.task.color).dot}`} />
                       <span
                         className={`truncate ${
-                          i.status === 'done' || i.status === 'skipped' ? 'text-slate-400 line-through' : ''
+                          i.status === 'done' || i.status === 'skipped' ? 'text-slate-400 line-through' : 'text-slate-700'
                         }`}
                       >
                         {i.task.title}
@@ -94,11 +100,12 @@ export default function MonthPage() {
                     </div>
                   ))}
                   {items.length > MAX_VISIBLE && (
-                    <div className="text-[10px] text-slate-500">+{items.length - MAX_VISIBLE} việc khác</div>
+                    <div className="text-[11px] text-slate-500">+{items.length - MAX_VISIBLE} việc khác</div>
                   )}
                 </div>
-                {/* Mobile: chỉ hiện chấm màu */}
-                <div className="mt-1 flex flex-wrap gap-0.5 sm:hidden">
+
+                {/* Màn nhỏ: chỉ hiện chấm màu */}
+                <div className="mt-1 flex flex-wrap gap-1 lg:hidden">
                   {items.slice(0, 6).map((i) => (
                     <span key={i.task.id} className={`h-1.5 w-1.5 rounded-full ${colorOf(i.task.color).dot}`} />
                   ))}
