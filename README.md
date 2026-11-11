@@ -64,6 +64,26 @@ Thay đổi schema về sau: `npm run db:new -- ten_migration` → sửa file SQ
 **Người dùng** chỉ cần vào **Cài đặt → Kết nối Telegram → Start**. App tạo mã dùng 1 lần (hạn 15 phút),
 bot nhận mã qua webhook và tự lưu Chat ID. Không ai phải tạo bot hay tìm Chat ID.
 
+### 3b. Lệnh bot Telegram (chỉ tài khoản admin)
+
+Trang **Lệnh bot** (menu bên trái, chỉ admin thấy) cho phép tạo/sửa/bật-tắt/sắp xếp lệnh và **Chạy thử** kết quả.
+Bot đọc lệnh trực tiếp từ bảng `bot_commands`, nên đổi hành động hoặc bật/tắt có hiệu lực ngay.
+Nút **Triển khai lên bot** cập nhật menu gợi ý `/` trong Telegram (chỉ hiện trong chat của admin).
+
+Thiết lập một lần:
+
+```sql
+-- Email admin lưu trong Vault, không nằm trong code
+select vault.create_secret('<email admin>', 'bot_admin_email');
+```
+```bash
+supabase functions deploy telegram-webhook --use-api
+supabase functions deploy bot-sync --use-api
+```
+
+Hành động có sẵn: việc hôm nay / ngày mai / cả tuần, việc tiếp theo, việc chưa xong, việc quá hạn,
+đánh dấu hoàn thành (`/done <số>`), thống kê tuần / tháng, danh sách lệnh, trả lời văn bản cố định.
+Thêm hành động mới = thêm nhánh trong `public.bot_execute` và `BOT_ACTIONS` (`src/lib/botActions.ts`) qua một migration.
 ### 4. Chạy local
 
 ```bash

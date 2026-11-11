@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
+import { supabase } from '../lib/supabase'
 import { UIContext, type UIValue } from '../context/UIContext'
 import { todayKey } from '../lib/dates'
 import type { DayItem, Task } from '../lib/types'
@@ -25,7 +26,7 @@ type ModalState =
   | { kind: 'occurrence'; item: DayItem }
   | null
 
-function UserMenu({ placement }: { placement: 'up' | 'down' }) {
+function UserMenu({ placement, isBotAdmin }: { placement: 'up' | 'down'; isBotAdmin: boolean }) {
   const { session, signOut } = useAuth()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -76,6 +77,16 @@ function UserMenu({ placement }: { placement: 'up' | 'down' }) {
           >
             <Icon name="settings" className="h-4 w-4" /> Cài đặt
           </Link>
+          {isBotAdmin && (
+            <Link
+              role="menuitem"
+              to="/bot"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-slate-50"
+            >
+              <Icon name="terminal" className="h-4 w-4" /> Lệnh bot Telegram
+            </Link>
+          )}
           <button
             role="menuitem"
             onClick={signOut}
@@ -93,6 +104,12 @@ export default function Layout() {
   const { error, clearError, loading } = useData()
   const { search } = useLocation()
   const [modal, setModal] = useState<ModalState>(null)
+  const [isBotAdmin, setIsBotAdmin] = useState(false)
+
+  // Mục "Lệnh bot" chỉ hiện với tài khoản quản trị (quyền thật nằm ở RLS/RPC phía server).
+  useEffect(() => {
+    supabase.rpc('is_bot_admin').then(({ data }) => setIsBotAdmin(data === true))
+  }, [])
 
   const ui = useMemo<UIValue>(
     () => ({
@@ -132,6 +149,19 @@ export default function Layout() {
                 {n.label}
               </NavLink>
             ))}
+            {isBotAdmin && (
+              <NavLink
+                to="/bot"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+                    isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'
+                  }`
+                }
+              >
+                <Icon name="terminal" className="h-5 w-5" />
+                Lệnh bot
+              </NavLink>
+            )}
             <NavLink
               to="/settings"
               className={({ isActive }) =>
@@ -147,7 +177,7 @@ export default function Layout() {
           <div className="mt-auto flex flex-col items-center gap-3">
             <Illustration className="h-28 w-auto" />
             <div className="w-full border-t border-slate-100 pt-3">
-              <UserMenu placement="up" />
+              <UserMenu placement="up" isBotAdmin={isBotAdmin} />
             </div>
           </div>
         </aside>
@@ -159,7 +189,7 @@ export default function Layout() {
             <span className="text-lg font-extrabold tracking-tight">TaskEasy</span>
           </div>
           <div className="w-40">
-            <UserMenu placement="down" />
+            <UserMenu placement="down" isBotAdmin={isBotAdmin} />
           </div>
         </header>
 

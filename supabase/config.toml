@@ -409,3 +409,6 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 
 [functions.telegram-webhook]
 verify_jwt = false
+
+[functions.bot-sync]
+verify_jwt = false

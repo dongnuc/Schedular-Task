@@ -1,6 +1,18 @@
 // Webhook của bot Telegram dùng chung. Telegram gọi hàm này mỗi khi có người nhắn bot.
-// Việc xác thực (secret token) và ghi DB nằm trong SQL: public.handle_telegram_start.
-// Hàm này không cần secret riêng: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY được Supabase tự cấp.
+//  - /start <mã>  : liên kết tài khoản (public.handle_telegram_start)
+//  - /<lệnh> ...  : lệnh dành cho admin, đọc từ bảng bot_commands (public.handle_telegram_command)
+// Việc xác thực (secret token) và ghi DB nằm trong SQL. Hàm này không cần secret riêng:
+// SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY được Supabase tự cấp.
+
+async function rpc(name: string, args: Record<string, string>) {
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: key, Authorization: `Bearer ${key}` },
+    body: JSON.stringify(args),
+  })
+  if (!res.ok) console.error(`${name} failed`, res.status, await res.text())
+}
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('ok')
@@ -15,22 +27,21 @@ Deno.serve(async (req) => {
 
   const text = update.message?.text?.trim() ?? ''
   const chat = update.message?.chat
-  // Chỉ xử lý lệnh /start trong chat riêng; luôn trả 200 để Telegram không gửi lại.
-  if (!chat?.id || chat.type !== 'private' || !/^\/start(@\w+)?(\s|$)/.test(text)) {
-    return new Response('ok')
-  }
-  const code = text.split(/\s+/)[1] ?? ''
+  // Chỉ xử lý lệnh trong chat riêng; luôn trả 200 để Telegram không gửi lại.
+  if (!chat?.id || chat.type !== 'private') return new Response('ok')
 
-  const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/handle_telegram_start`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-      Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-    },
-    body: JSON.stringify({ p_secret: secret, p_chat_id: String(chat.id), p_code: code }),
-  })
-  if (!res.ok) console.error('handle_telegram_start failed', res.status, await res.text())
+  const m = /^\/([A-Za-z0-9_]{1,32})(?:@\w+)?(?:\s+([\s\S]*))?$/.exec(text)
+  if (!m) return new Response('ok')
+
+  const command = m[1].toLowerCase()
+  const args = (m[2] ?? '').trim()
+  const chatId = String(chat.id)
+
+  if (command === 'start') {
+    await rpc('handle_telegram_start', { p_secret: secret, p_chat_id: chatId, p_code: args.split(/\s+/)[0] ?? '' })
+  } else {
+    await rpc('handle_telegram_command', { p_secret: secret, p_chat_id: chatId, p_command: command, p_args: args })
+  }
 
   return new Response('ok')
 })
