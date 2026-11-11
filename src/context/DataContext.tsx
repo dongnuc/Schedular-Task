@@ -25,6 +25,8 @@ interface DataValue {
   itemsForDate: (date: string) => DayItem[]
   itemsForDates: (dates: string[]) => DayItem[]
   saveTask: (input: TaskInput, id?: string) => Promise<boolean>
+  /** Tạo nhiều công việc trong một lần (một request, tất cả hoặc không). */
+  saveTasks: (inputs: TaskInput[]) => Promise<boolean>
   deleteTask: (id: string) => Promise<boolean>
   updateOccurrence: (taskId: string, date: string, patch: OccurrencePatch) => Promise<boolean>
 }
@@ -143,6 +145,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return true
   }, [])
 
+  const saveTasks = useCallback(async (inputs: TaskInput[]) => {
+    if (inputs.length === 0) return true
+    const { data, error } = await supabase.from('tasks').insert(inputs).select()
+    if (error) {
+      setError(error.message)
+      return false
+    }
+    setTasks((prev) => [...prev, ...(data as Task[])])
+    return true
+  }, [])
+
   const deleteTask = useCallback(async (id: string) => {
     const { error } = await supabase.from('tasks').delete().eq('id', id)
     if (error) {
@@ -222,10 +235,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       itemsForDate,
       itemsForDates,
       saveTask,
+      saveTasks,
       deleteTask,
       updateOccurrence,
     }),
-    [tasks, loading, error, ensureRange, itemsForDate, itemsForDates, saveTask, deleteTask, updateOccurrence],
+    [tasks, loading, error, ensureRange, itemsForDate, itemsForDates, saveTask, saveTasks, deleteTask, updateOccurrence],
   )
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>

@@ -6,6 +6,7 @@ import { UIContext, type UIValue } from '../context/UIContext'
 import { todayKey } from '../lib/dates'
 import type { DayItem, Task } from '../lib/types'
 import Icon, { Illustration, Logo, type IconName } from './Icon'
+import BulkTaskModal from './BulkTaskModal'
 import OccurrenceModal from './OccurrenceModal'
 import TaskFormModal from './TaskFormModal'
 
@@ -20,6 +21,7 @@ const NAV: { to: string; label: string; icon: IconName }[] = [
 
 type ModalState =
   | { kind: 'form'; task?: Task; date: string }
+  | { kind: 'bulk'; date: string }
   | { kind: 'occurrence'; item: DayItem }
   | null
 
@@ -96,6 +98,7 @@ export default function Layout() {
     () => ({
       openTaskForm: (opts) =>
         setModal({ kind: 'form', task: opts?.task, date: opts?.date ?? todayKey() }),
+      openBulkForm: (opts) => setModal({ kind: 'bulk', date: opts?.date ?? todayKey() }),
       openOccurrence: (item) => setModal({ kind: 'occurrence', item }),
     }),
     [],
@@ -200,7 +203,19 @@ export default function Layout() {
         </nav>
 
         {modal?.kind === 'form' && (
-          <TaskFormModal task={modal.task} defaultDate={modal.date} onClose={() => setModal(null)} />
+          <TaskFormModal
+            task={modal.task}
+            defaultDate={modal.date}
+            onClose={() => setModal(null)}
+            onBulk={() => setModal({ kind: 'bulk', date: modal.date })}
+          />
+        )}
+        {modal?.kind === 'bulk' && (
+          <BulkTaskModal
+            defaultDate={modal.date}
+            onClose={() => setModal(null)}
+            onSingle={() => setModal({ kind: 'form', date: modal.date })}
+          />
         )}
         {modal?.kind === 'occurrence' && (
           <OccurrenceModal

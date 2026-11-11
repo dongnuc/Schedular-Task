@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Icon from '../components/Icon'
 import TaskRow from '../components/TaskRow'
-import { DatePickerButton, StatTile } from '../components/Widgets'
+import { DatePickerButton } from '../components/DatePicker'
+import { StatTile } from '../components/Widgets'
 import { useData } from '../context/DataContext'
 import { useUI } from '../context/UIContext'
 import { fmt, shiftKey, todayKey } from '../lib/dates'
@@ -23,7 +24,7 @@ const FILTERS: { value: Filter; label: string }[] = [
 export default function DayPage() {
   const [date, setDate] = useDateParam()
   const { ensureRange, itemsForDate } = useData()
-  const { openTaskForm } = useUI()
+  const { openTaskForm, openBulkForm } = useUI()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
 
@@ -114,6 +115,9 @@ export default function DayPage() {
               </select>
               <Icon name="chevron-down" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
             </div>
+            <button className="btn-ghost" onClick={() => openBulkForm({ date })}>
+              <Icon name="list-plus" className="h-4 w-4" /> Thêm nhiều
+            </button>
             <button className="btn-primary" onClick={() => openTaskForm({ date })}>
               <Icon name="plus" className="h-4 w-4" strokeWidth={2.5} /> Thêm việc
             </button>

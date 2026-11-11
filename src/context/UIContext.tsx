@@ -3,6 +3,7 @@ import type { DayItem, Task } from '../lib/types'
 
 export interface UIValue {
   openTaskForm: (opts?: { task?: Task; date?: string }) => void
+  openBulkForm: (opts?: { date?: string }) => void
   openOccurrence: (item: DayItem) => void
 }
 

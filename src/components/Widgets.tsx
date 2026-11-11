@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import Icon, { type IconName } from './Icon'
 
 export function ProgressBar({ value, className = '' }: { value: number; className?: string }) {
@@ -74,36 +74,6 @@ export function AddButton({ onClick }: { onClick: () => void }) {
     <button className="btn-primary" onClick={onClick}>
       <Icon name="plus" className="h-4 w-4" strokeWidth={2.5} /> Thêm việc
     </button>
-  )
-}
-
-/** Nút lịch: mở bộ chọn ngày của trình duyệt. */
-export function DatePickerButton({ value, onChange }: { value: string; onChange: (d: string) => void }) {
-  const ref = useRef<HTMLInputElement>(null)
-  return (
-    <span className="relative inline-flex">
-      <button
-        className="btn-icon"
-        aria-label="Chọn ngày"
-        onClick={() => {
-          const el = ref.current
-          if (!el) return
-          if (typeof el.showPicker === 'function') el.showPicker()
-          else el.focus()
-        }}
-      >
-        <Icon name="calendar" />
-      </button>
-      <input
-        ref={ref}
-        type="date"
-        value={value}
-        tabIndex={-1}
-        aria-hidden="true"
-        onChange={(e) => e.target.value && onChange(e.target.value)}
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
-      />
-    </span>
   )
 }
 

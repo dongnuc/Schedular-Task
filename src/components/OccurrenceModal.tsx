@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { useData } from '../context/DataContext'
 import { PRIORITY_LABEL, STATUS_LABEL, colorOf } from '../lib/colors'
-import { fmt, timeRange } from '../lib/dates'
+import { fmt, shiftKey, timeRange } from '../lib/dates'
 import { describeRecurrence } from '../lib/recurrence'
-import type { DayItem, OccurrenceStatus } from '../lib/types'
+import { emptyRecurrence, toRecurrenceFields, validateRecurrence, type RecurrenceValue } from '../lib/recurrenceForm'
+import type { DayItem, OccurrenceStatus, TaskInput } from '../lib/types'
+import { DateField } from './DatePicker'
 import Icon from './Icon'
 import Modal from './Modal'
+import RecurrenceFields from './RecurrenceFields'
 
 interface Props {
   item: DayItem
@@ -17,7 +20,7 @@ const STATUSES: OccurrenceStatus[] = ['pending', 'in_progress', 'done', 'skipped
 
 /** Ghi nhận tiến độ + kết quả của một công việc trong một ngày cụ thể. */
 export default function OccurrenceModal({ item, onClose, onEdit }: Props) {
-  const { updateOccurrence, deleteTask } = useData()
+  const { updateOccurrence, deleteTask, saveTask } = useData()
   const { task, date, occurrence } = item
   const [status, setStatus] = useState<OccurrenceStatus>(item.status)
   const [progress, setProgress] = useState(item.progress)
@@ -25,6 +28,33 @@ export default function OccurrenceModal({ item, onClose, onEdit }: Props) {
   const [rating, setRating] = useState<number | null>(occurrence?.rating ?? null)
   const [busy, setBusy] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+
+  // Lặp lại trong tương lai: tạo một công việc mới giống việc này, bắt đầu từ ngày được chọn.
+  const [repeatOpen, setRepeatOpen] = useState(false)
+  const [repStart, setRepStart] = useState(() => shiftKey(item.date, 1))
+  const [rep, setRep] = useState<RecurrenceValue>(() => ({ ...emptyRecurrence(), type: 'weekly' }))
+  const [repError, setRepError] = useState<string | null>(null)
+
+  const createRepeat = async () => {
+    const err = validateRecurrence(rep, repStart)
+    if (err) return setRepError(err)
+    const copy: TaskInput = {
+      title: task.title,
+      description: task.description,
+      color: task.color,
+      priority: task.priority,
+      start_date: repStart,
+      start_time: task.start_time,
+      end_time: task.end_time,
+      ...toRecurrenceFields(rep, repStart),
+      notify: task.notify,
+    }
+    setBusy(true)
+    const ok = await saveTask(copy)
+    setBusy(false)
+    if (ok) onClose()
+    else setRepError('Không tạo được lịch lặp, vui lòng thử lại.')
+  }
 
   const recurrence = describeRecurrence(task)
   const color = colorOf(task.color)
@@ -153,6 +183,36 @@ export default function OccurrenceModal({ item, onClose, onEdit }: Props) {
               </button>
             ))}
           </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-100">
+          <button
+            type="button"
+            aria-expanded={repeatOpen}
+            onClick={() => setRepeatOpen((o) => !o)}
+            className="flex w-full items-center justify-between px-3.5 py-3 text-left text-sm font-semibold text-indigo-700"
+          >
+            <span className="inline-flex items-center gap-2">
+              <Icon name="repeat" className="h-4 w-4" /> Lặp lại việc này trong tương lai
+            </span>
+            <Icon name={repeatOpen ? 'chevron-down' : 'chevron-right'} className="h-4 w-4" />
+          </button>
+          {repeatOpen && (
+            <div className="space-y-3 border-t border-slate-100 p-3.5">
+              <p className="text-xs text-slate-500">
+                Tạo một công việc mới giống việc này, bắt đầu từ ngày bạn chọn. Lịch sử của việc hiện tại không bị thay đổi.
+              </p>
+              <div>
+                <label className="label" htmlFor="r-start">Bắt đầu từ ngày</label>
+                <DateField id="r-start" value={repStart} min={shiftKey(item.date, 1)} onChange={(d) => d && setRepStart(d)} />
+              </div>
+              <RecurrenceFields value={rep} onChange={setRep} startDate={repStart} idPrefix="r-rec" />
+              {repError && <p role="alert" className="text-sm text-rose-600">{repError}</p>}
+              <button type="button" className="btn-primary w-full" disabled={busy} onClick={createRepeat}>
+                {busy ? 'Đang tạo…' : rep.type === 'none' ? 'Tạo bản sao vào ngày đã chọn' : 'Tạo lịch lặp'}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-4">
