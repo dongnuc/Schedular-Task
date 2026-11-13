@@ -6,7 +6,7 @@ import { AddButton, DateNav, PageHeader, ProgressBar } from '../components/Widge
 import { useData } from '../context/DataContext'
 import { useUI } from '../context/UIContext'
 import { fmt, fromKey, shiftKey, todayKey, weekDays, weekdayLabel } from '../lib/dates'
-import { summarize } from '../lib/stats'
+import { isOverdue, summarize } from '../lib/stats'
 import { useDateParam } from '../lib/useDateParam'
 
 export default function WeekPage() {
@@ -47,12 +47,17 @@ export default function WeekPage() {
           const items = itemsForDate(d)
           const s = summarize(items)
           const isToday = d === today
+          const overdueCount = items.filter((i) => isOverdue(i)).length
           return (
             <section
               key={d}
-              aria-label={`${weekdayLabel(d)} ${fmt(d, 'dd/MM')}`}
+              aria-label={`${weekdayLabel(d)} ${fmt(d, 'dd/MM')}${overdueCount ? `, ${overdueCount} việc quá hạn` : ''}`}
               className={`card flex min-h-40 flex-col p-3 md:min-h-[26rem] ${
-                isToday ? '!border-indigo-500 ring-2 ring-indigo-100' : ''
+                isToday
+                  ? '!border-indigo-500 ring-2 ring-indigo-100'
+                  : overdueCount
+                    ? '!border-rose-400 !bg-rose-50/60 ring-1 ring-rose-200'
+                    : ''
               }`}
             >
               <div className="mb-3 flex items-start justify-between">
@@ -75,6 +80,11 @@ export default function WeekPage() {
                 </button>
               </div>
 
+              {overdueCount > 0 && (
+                <div className="mb-2 flex items-center gap-1.5 rounded-lg bg-rose-600 px-2 py-1 text-[11px] font-bold text-white">
+                  <Icon name="alert" className="h-3.5 w-3.5" /> {overdueCount} việc quá hạn
+                </div>
+              )}
               {items.length === 0 ? (
                 <div className="flex flex-1 flex-col items-center justify-center gap-2 py-4 text-center text-xs text-slate-400">
                   <span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-300">

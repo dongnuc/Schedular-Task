@@ -1,5 +1,5 @@
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly'
-export type OccurrenceStatus = 'pending' | 'in_progress' | 'done' | 'skipped'
+export type OccurrenceStatus = 'pending' | 'in_progress' | 'done' | 'skipped' | 'postponed'
 
 export interface Task {
   id: string
@@ -16,11 +16,15 @@ export interface Task {
   recurrence_days: number[] // ISO weekday 1..7
   recurrence_end: string | null
   notify: boolean
+  /** Việc này được gia hạn từ ngày này (yyyy-MM-dd); null nếu là việc gốc. */
+  carried_from: string | null
+  origin_task_id: string | null
   created_at: string
   updated_at: string
 }
 
-export type TaskInput = Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+export type TaskInput = Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'carried_from' | 'origin_task_id'> &
+  Partial<Pick<Task, 'carried_from' | 'origin_task_id'>>
 
 export interface Occurrence {
   id: string
@@ -32,6 +36,8 @@ export interface Occurrence {
   result_note: string | null
   rating: number | null
   completed_at: string | null
+  /** Khi status = 'postponed': ngày việc này được gia hạn sang. */
+  postponed_to: string | null
 }
 
 export type OccurrencePatch = Partial<

@@ -1,7 +1,7 @@
 import { useData } from '../context/DataContext'
 import { useUI } from '../context/UIContext'
-import { OVERDUE_BADGE, STATUS_BADGE, STATUS_LABEL, colorOf } from '../lib/colors'
-import { hhmm } from '../lib/dates'
+import { OVERDUE_BADGE, OVERDUE_ROW, STATUS_BADGE, STATUS_LABEL, colorOf } from '../lib/colors'
+import { fmt, hhmm } from '../lib/dates'
 import { isOverdue } from '../lib/stats'
 import type { DayItem } from '../lib/types'
 import Icon from './Icon'
@@ -58,13 +58,23 @@ export default function TaskRow({ item, compact = false }: { item: DayItem; comp
   const { task, status } = item
   const color = colorOf(task.color)
   const done = status === 'done'
-  const muted = done || status === 'skipped'
+  const muted = done || status === 'skipped' || status === 'postponed'
+  const overdue = isOverdue(item)
+  const carried = task.carried_from ? `Gia hạn từ ngày ${fmt(task.carried_from, 'dd/MM/yyyy')}` : null
+  const postponed =
+    status === 'postponed' && item.occurrence?.postponed_to
+      ? `Đã gia hạn sang ngày ${fmt(item.occurrence.postponed_to, 'dd/MM/yyyy')}`
+      : null
 
   const toggle = () => updateOccurrence(task.id, item.date, { status: done ? 'pending' : 'done' })
 
   if (compact) {
     return (
-      <div className={`flex items-start gap-2 rounded-xl border-l-[3px] ${color.border} ${color.soft} px-2 py-1.5`}>
+      <div
+        className={`flex items-start gap-2 rounded-xl border-l-[3px] px-2 py-1.5 ${
+          overdue ? OVERDUE_ROW : `${color.border} ${color.soft}`
+        }`}
+      >
         <div className="mt-0.5">
           <CheckCircle small done={done} onClick={toggle} label={`Hoàn thành: ${task.title}`} />
         </div>
@@ -76,13 +86,32 @@ export default function TaskRow({ item, compact = false }: { item: DayItem; comp
             {task.start_time ? hhmm(task.start_time) : 'Cả ngày'}
             {status === 'in_progress' && ` · ${item.progress}%`}
           </div>
+          {overdue && (
+            <span className={`mt-1 inline-block whitespace-nowrap rounded px-1.5 py-px text-[10px] font-bold uppercase ${OVERDUE_BADGE}`}>
+              Quá hạn
+            </span>
+          )}
+          {task.carried_from && (
+            <div className="mt-0.5 break-words text-[10px] font-semibold leading-snug text-violet-700">
+              ↪ Gia hạn từ {fmt(task.carried_from, 'dd/MM')}
+            </div>
+          )}
+          {status === 'postponed' && item.occurrence?.postponed_to && (
+            <div className="mt-0.5 break-words text-[10px] font-semibold leading-snug text-violet-700">
+              → Gia hạn sang {fmt(item.occurrence.postponed_to, 'dd/MM')}
+            </div>
+          )}
         </button>
       </div>
     )
   }
 
   return (
-    <div className="flex items-center gap-4 border-b border-slate-100 px-2 py-3.5 last:border-0">
+    <div
+      className={`flex items-center gap-4 border-b border-slate-100 px-2 py-3.5 last:border-0 ${
+        overdue ? 'rounded-xl border-l-4 border-l-rose-600 bg-rose-50/70' : ''
+      }`}
+    >
       <CheckCircle done={done} onClick={toggle} label={`Hoàn thành: ${task.title}`} />
       <button onClick={() => openOccurrence(item)} className="min-w-0 flex-1 text-left">
         <div className="flex items-center gap-2">
@@ -98,6 +127,12 @@ export default function TaskRow({ item, compact = false }: { item: DayItem; comp
             </span>
           )}
         </div>
+        {carried && (
+          <div className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-violet-50 px-1.5 py-px text-[11px] font-semibold text-violet-700">
+            ↪ {carried}
+          </div>
+        )}
+        {postponed && <div className="mt-0.5 text-xs font-semibold text-violet-700">→ {postponed}</div>}
         {item.occurrence?.result_note && (
           <div className="mt-0.5 truncate text-xs text-slate-500">{item.occurrence.result_note}</div>
         )}

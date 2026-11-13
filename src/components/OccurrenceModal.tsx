@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useData } from '../context/DataContext'
 import { PRIORITY_LABEL, STATUS_LABEL, colorOf } from '../lib/colors'
-import { fmt, shiftKey, timeRange } from '../lib/dates'
+import { fmt, shiftKey, timeRange, todayKey } from '../lib/dates'
 import { describeRecurrence } from '../lib/recurrence'
 import { emptyRecurrence, toRecurrenceFields, validateRecurrence, type RecurrenceValue } from '../lib/recurrenceForm'
 import type { DayItem, OccurrenceStatus, TaskInput } from '../lib/types'
@@ -20,7 +20,7 @@ const STATUSES: OccurrenceStatus[] = ['pending', 'in_progress', 'done', 'skipped
 
 /** Ghi nhận tiến độ + kết quả của một công việc trong một ngày cụ thể. */
 export default function OccurrenceModal({ item, onClose, onEdit }: Props) {
-  const { updateOccurrence, deleteTask, saveTask } = useData()
+  const { updateOccurrence, deleteTask, saveTask, postponeOccurrence } = useData()
   const { task, date, occurrence } = item
   const [status, setStatus] = useState<OccurrenceStatus>(item.status)
   const [progress, setProgress] = useState(item.progress)
@@ -34,6 +34,24 @@ export default function OccurrenceModal({ item, onClose, onEdit }: Props) {
   const [repStart, setRepStart] = useState(() => shiftKey(item.date, 1))
   const [rep, setRep] = useState<RecurrenceValue>(() => ({ ...emptyRecurrence(), type: 'weekly' }))
   const [repError, setRepError] = useState<string | null>(null)
+
+  // Gia hạn: chuyển việc chưa xong sang một ngày khác (ngày đích phải sau ngày hiện tại của việc).
+  const isPostponed = item.status === 'postponed'
+  const canPostpone = item.status === 'pending' || item.status === 'in_progress'
+  const minTarget = shiftKey(date, 1)
+  const tomorrow = shiftKey(todayKey(), 1)
+  const [postOpen, setPostOpen] = useState(false)
+  const [postDate, setPostDate] = useState(() => (tomorrow >= minTarget ? tomorrow : minTarget))
+  const [postError, setPostError] = useState<string | null>(null)
+
+  const postpone = async () => {
+    if (!postDate || postDate < minTarget) return setPostError('Chọn ngày sau ngày hiện tại của việc.')
+    setBusy(true)
+    const ok = await postponeOccurrence(task.id, date, postDate)
+    setBusy(false)
+    if (ok) onClose()
+    else setPostError('Không gia hạn được, vui lòng thử lại.')
+  }
 
   const createRepeat = async () => {
     const err = validateRecurrence(rep, repStart)
@@ -185,6 +203,59 @@ export default function OccurrenceModal({ item, onClose, onEdit }: Props) {
           </div>
         </div>
 
+        {(canPostpone || isPostponed || task.carried_from) && (
+          <div className="rounded-xl border border-violet-100 bg-violet-50/40">
+            {task.carried_from && (
+              <p className="px-3.5 pt-3 text-sm font-bold text-violet-800">
+                ↪ Gia hạn từ ngày {fmt(task.carried_from, 'dd/MM/yyyy')}
+              </p>
+            )}
+            {isPostponed && (
+              <p className="px-3.5 pt-3 text-sm font-bold text-violet-800">
+                → Việc gốc đã gia hạn sang ngày{' '}
+                {item.occurrence?.postponed_to ? fmt(item.occurrence.postponed_to, 'dd/MM/yyyy') : '(chưa rõ)'}
+              </p>
+            )}
+            {canPostpone && (
+              <div className="p-3.5">
+                <button
+                  type="button"
+                  aria-expanded={postOpen}
+                  onClick={() => setPostOpen((o) => !o)}
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-violet-800"
+                >
+                  <Icon name={postOpen ? 'chevron-down' : 'chevron-right'} className="h-4 w-4" />
+                  Gia hạn sang ngày khác
+                </button>
+                {postOpen && (
+                  <div className="mt-3 space-y-3">
+                    <p className="text-xs leading-relaxed text-slate-600">
+                      Việc sẽ chuyển sang ngày bạn chọn và ghi rõ là “Gia hạn từ ngày {fmt(date, 'dd/MM/yyyy')}”.
+                      Việc ở ngày này được đánh dấu “Đã gia hạn” và không tính vào tỷ lệ hoàn thành.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        className="btn-ghost !min-h-9 !py-1.5"
+                        onClick={() => setPostDate(tomorrow >= minTarget ? tomorrow : minTarget)}
+                      >
+                        Ngày mai
+                      </button>
+                      <div className="min-w-44 flex-1">
+                        <DateField id="p-date" value={postDate} min={minTarget} onChange={setPostDate} />
+                      </div>
+                    </div>
+                    {postError && <p role="alert" className="text-sm text-rose-600">{postError}</p>}
+                    <button type="button" className="btn-primary w-full" disabled={busy || !postDate} onClick={postpone}>
+                      {postDate ? `Gia hạn sang ${fmt(postDate, 'dd/MM/yyyy')}` : 'Chọn ngày'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="rounded-xl border border-slate-100">
           <button
             type="button"
@@ -228,7 +299,7 @@ export default function OccurrenceModal({ item, onClose, onEdit }: Props) {
               </button>
             )}
           </div>
-          <button type="button" className="btn-primary" disabled={busy} onClick={save}>
+          <button type="button" className="btn-primary" disabled={busy || isPostponed} onClick={save}>
             {busy ? 'Đang lưu…' : 'Lưu kết quả'}
           </button>
         </div>

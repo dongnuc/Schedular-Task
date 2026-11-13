@@ -3,7 +3,7 @@ import type { DayItem } from './types'
 
 /** Việc chưa xong mà đã quá hạn (ngày trước hôm nay, hoặc hôm nay đã qua giờ kết thúc/bắt đầu). */
 export function isOverdue(it: DayItem, now = new Date()): boolean {
-  if (it.status === 'done' || it.status === 'skipped') return false
+  if (it.status === 'done' || it.status === 'skipped' || it.status === 'postponed') return false
   const today = format(now, 'yyyy-MM-dd')
   if (it.date < today) return true
   if (it.date > today) return false
@@ -50,7 +50,8 @@ export function summarize(items: DayItem[], now = new Date()): Summary {
   let ratingCount = 0
 
   for (const it of items) {
-    if (it.status === 'skipped') {
+    // Việc đã gia hạn không tính vào tỷ lệ (gộp vào nhóm "bỏ qua").
+    if (it.status === 'skipped' || it.status === 'postponed') {
       skipped++
       continue
     }

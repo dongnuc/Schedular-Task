@@ -29,6 +29,14 @@ interface DataValue {
   saveTasks: (inputs: TaskInput[]) => Promise<boolean>
   deleteTask: (id: string) => Promise<boolean>
   updateOccurrence: (taskId: string, date: string, patch: OccurrencePatch) => Promise<boolean>
+  /** Gia hạn một lần việc sang ngày `target`; tạo việc mới ở ngày đó ghi rõ nguồn gốc. */
+  postponeOccurrence: (taskId: string, date: string, target: string) => Promise<boolean>
+}
+
+const POSTPONE_ERRORS: Record<string, string> = {
+  already_done: 'Việc này đã hoàn thành nên không thể gia hạn.',
+  target_must_be_after_date: 'Ngày gia hạn phải sau ngày hiện tại của việc.',
+  task_not_on_date: 'Việc này không diễn ra vào ngày đã chọn.',
 }
 
 const DataContext = createContext<DataValue | null>(null)
@@ -156,6 +164,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return true
   }, [])
 
+  const postponeOccurrence = useCallback(async (taskId: string, date: string, target: string) => {
+    const { error } = await supabase.rpc('postpone_occurrence', {
+      p_task_id: taskId,
+      p_date: date,
+      p_target: target,
+    })
+    if (error) {
+      setError(POSTPONE_ERRORS[error.message.trim()] ?? error.message)
+      return false
+    }
+    // Tải lại danh sách việc (có việc mới ở ngày đích) và trạng thái của khoảng ngày liên quan.
+    const [tasksRes, rows] = await Promise.all([
+      supabase.from('tasks').select('*').order('start_time', { nullsFirst: true }),
+      fetchOccurrences(date, target),
+    ])
+    if (!tasksRes.error) setTasks(tasksRes.data as Task[])
+    setOcc((prev) => {
+      const next = { ...prev }
+      for (const r of rows) next[occKey(r.task_id, r.occurrence_date)] = r
+      return next
+    })
+    return true
+  }, [])
+
   const deleteTask = useCallback(async (id: string) => {
     const { error } = await supabase.from('tasks').delete().eq('id', id)
     if (error) {
@@ -200,6 +232,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         result_note: null,
         rating: null,
         completed_at: null,
+        postponed_to: null,
       }
       setOcc((prev) => ({ ...prev, [key]: { ...base, ...row } }))
 
@@ -238,8 +271,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       saveTasks,
       deleteTask,
       updateOccurrence,
+      postponeOccurrence,
     }),
-    [tasks, loading, error, ensureRange, itemsForDate, itemsForDates, saveTask, saveTasks, deleteTask, updateOccurrence],
+    [tasks, loading, error, ensureRange, itemsForDate, itemsForDates, saveTask, saveTasks, deleteTask, updateOccurrence, postponeOccurrence],
   )
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>

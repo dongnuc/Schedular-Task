@@ -26,6 +26,7 @@ export const STATUS_LABEL = {
   in_progress: 'Đang thực hiện',
   done: 'Hoàn thành',
   skipped: 'Bỏ qua',
+  postponed: 'Đã gia hạn',
 } as const
 
 export const STATUS_BADGE = {
@@ -33,6 +34,9 @@ export const STATUS_BADGE = {
   in_progress: 'bg-indigo-50 text-indigo-700',
   done: 'bg-emerald-50 text-emerald-700',
   skipped: 'bg-slate-100 text-slate-500',
+  postponed: 'bg-violet-50 text-violet-700',
 } as const
 
-export const OVERDUE_BADGE = 'bg-rose-50 text-rose-700'
+export const OVERDUE_BADGE = 'bg-rose-600 text-white'
+/** Nền + viền nổi bật cho việc quá hạn (dùng ở màn Tuần và danh sách). */
+export const OVERDUE_ROW = 'border-l-rose-600 bg-rose-50 ring-1 ring-rose-200'
